@@ -1,0 +1,128 @@
+{
+  "name": "rhpilot",
+  "displayName": "rhpilot",
+  "description": "Get completions from rhpilot server",
+  "version": "0.0.1",
+  "icon": "assets/icon.png",
+  "keywords": [
+    "code-suggestion",
+    "copilot",
+    "code-inference",
+    "rhpilot"
+  ],
+  "repository": {
+    "url": "https://github.com/csegura/rhpilot"
+  },
+  "license": "MIT",
+  "publisher": "csegura",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "bugs": {
+    "url": "https://github.com/csegura/rhpilot/issues"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "author": {
+    "name": "RomHeat",
+    "url": "https://github.com/csegura/"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "rhpilot.enable",
+        "shortTitle": "Enable rhpilot",
+        "title": "Enable rhpilot"
+      },
+      {
+        "command": "rhpilot.disable",
+        "title": "Disable rhpilot",
+        "shortTitle": "Disable rhpilot"
+      }
+    ],
+    "configuration": {
+      "title": "rhpilot",
+      "properties": {
+        "rhpilot.server": {
+          "type": "string",
+          "default": "http://192.168.11.211:8000/v1/engines"
+        },
+        "rhpilot.engine": {
+          "type": "string",
+          "default": "copilot-codex"
+        },
+        "rhpilot.model": {
+          "type": "string",
+          "default": "copilot-codex"
+        },
+        "rhpilot.token": {
+          "type": "string",
+          "default": "dummy"
+        },
+        "rhpilot.maxTokens": {
+          "type": "number",
+          "default": 200
+        },
+        "rhpilot.temperature": {
+          "type": "number",
+          "default": 0.1
+        },
+        "rhpilot.maxLines": {
+          "type": "number",
+          "default": 150
+        },
+        "rhpilot.suggestionDelay": {
+          "type": "number",
+          "default": 150
+        },
+        "rhpilot.enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "rhpilot.inlineCompletion": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "vscode:package": "npm exec vsce package",
+    "vscode:publish": "npm exec vsce publish",
+    "vsix": "vsce package"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.70.0",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "@vscode/test-electron": "^2.1.5",
+    "@vscode/vsce": "^2.18.0",
+    "eslint": "^8.20.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "dependencies": {
+    "openai": "^3.0.0"
+  }
+}

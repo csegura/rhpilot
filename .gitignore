@@ -1,0 +1,11 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+*-lock.json
+test/test.js
+*.vsix
+**.github
+**.vscode
+
