@@ -50,33 +50,29 @@
       "properties": {
         "rhpilot.server": {
           "type": "string",
-          "default": "http://192.168.11.211:8000/v1/engines"
-        },
-        "rhpilot.engine": {
+          "default": "http://192.168.11.211:8000/v1"
+        },        
+        "rhpilot.api_key": {
           "type": "string",
-          "default": "copilot-codex"
+          "default": "Your own model no needs key :-)"
         },
         "rhpilot.model": {
           "type": "string",
-          "default": "copilot-codex"
+          "default": "model goes here"
         },
-        "rhpilot.token": {
-          "type": "string",
-          "default": "dummy"
-        },
-        "rhpilot.maxTokens": {
+        "rhpilot.max_tokens": {
           "type": "number",
-          "default": 200
+          "default": 600
         },
         "rhpilot.temperature": {
           "type": "number",
           "default": 0.1
         },
-        "rhpilot.maxLines": {
+        "rhpilot.max_lines": {
           "type": "number",
           "default": 150
         },
-        "rhpilot.suggestionDelay": {
+        "rhpilot.suggestion_delay": {
           "type": "number",
           "default": 150
         },
@@ -84,18 +80,23 @@
           "type": "boolean",
           "default": true
         },
-        "rhpilot.inlineCompletion": {
+        "rhpilot.inline_completion": {
           "type": "boolean",
-          "default": true
+          "default": false
+        },
+        "rhpilot.system": {          
+          "type": "string",
+          "default": "You are a code assistant, you has to generate code ONLY code to do the user task."
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "npm run package_debug",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
+    "package_debug": "webpack --mode development --devtool inline-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",

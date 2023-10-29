@@ -1,5 +1,10 @@
 import {
+  ChatCompletionRequestMessage,
+  ChatCompletionRequestMessageRoleEnum,
+  ChatCompletionResponseMessage,
   Configuration,
+  CreateChatCompletionResponse,
+  CreateChatCompletionResponseChoicesInner,
   CreateCompletionRequestPrompt,
   CreateCompletionResponse,
   OpenAIApi,
@@ -21,20 +26,20 @@ import { AxiosResponse } from "axios";
 import { nextId } from "./Uuid";
 import { LEADING_LINES_PROP } from "./Constants";
 
+const config = workspace.getConfiguration("rhpilot");
+
 export class rhpilotCompletionProvider
   implements InlineCompletionItemProvider
 {
   cachedPrompts: Map<string, number> = new Map<string, number>();
 
   private configuration: Configuration = new Configuration({
-    apiKey: workspace.getConfiguration("rhpilot").get("token"),
+    apiKey: config.get("api_key"),
   });
 
   private openai: OpenAIApi = new OpenAIApi(
     this.configuration,
-    `${workspace.getConfiguration("rhpilot").get("server")}/${workspace
-      .getConfiguration("rhpilot")
-      .get("engine")}`
+    `${config.get("server")}`
   );
 
   private requestStatus: string = "done";
@@ -53,7 +58,7 @@ export class rhpilotCompletionProvider
     token: CancellationToken
   ): Promise<InlineCompletionItem[] | InlineCompletionList | null | undefined> {
 
-    if (!workspace.getConfiguration("rhpilot").get("enabled")) {
+    if (!config.get("enabled")) {
       console.debug("Extension not enabled, skipping.");
       return Promise.resolve([] as InlineCompletionItem[]);
     }
@@ -97,9 +102,10 @@ export class rhpilotCompletionProvider
     this.statusBar.tooltip = "rhpilot - Working";
     this.statusBar.text = "$(loading~spin)";
 
-    return this.callOpenAi(prompt as String)
+    const response = this.callOpenAi(prompt as string)
       .then((response) => {
         this.statusBar.text = "$(light-bulb)";
+        console.debug("Response = ", response.data);
         return this.toInlineCompletions(response.data, position);
       })
       .catch((error) => {
@@ -112,15 +118,16 @@ export class rhpilotCompletionProvider
         this.requestStatus = "done";
         this.cachedPrompts.delete(currentId);
       });
+           
+      return response;
   }
 
   private getPrompt(
     document: TextDocument,
     position: Position
   ): String | undefined {
-    const promptLinesCount = workspace
-      .getConfiguration("rhpilot")
-      .get("maxLines") as number;
+    const promptLinesCount = config
+      .get("max_lines") as number;
 
     /* 
         Put entire file in prompt if it's small enough, otherwise only
@@ -158,43 +165,70 @@ export class rhpilotCompletionProvider
   }
 
   private callOpenAi(
-    prompt: String
-  ): Promise<AxiosResponse<CreateCompletionResponse, any>> {
-    console.debug("Calling OpenAi", prompt);
+    userPrompt: string
+  ): Promise<AxiosResponse<CreateChatCompletionResponse, any>> {
+    console.debug("Calling OpenAi", userPrompt);
+
+    const model = config.get("model") as string;
+    const system = config.get("system") as string;
+    const max_tokens = config.get("max_tokens") as number;
+    const temperature = config.get("temperature") as number;
+    const messages = [
+      { role: ChatCompletionRequestMessageRoleEnum.System, content: system },
+      { role: ChatCompletionRequestMessageRoleEnum.User, content: userPrompt }
+    ]
 
     //check if inline completion is enabled
-    const stopWords = workspace
-      .getConfiguration("rhpilot")
-      .get("inlineCompletion")
+    const stopWords = config
+      .get("inline_completion")
       ? ["\n"]
       : [];
+     
+    const prompt = `### Instructions: ${system}.\n${userPrompt}\n\n### Response:\n`
     
-      console.debug("Calling OpenAi with stop words = ", stopWords);
-
-    return this.openai.createCompletion({
-      model: workspace.getConfiguration("rhpilot").get("model") ?? "<<UNSET>>",
-      prompt: prompt as CreateCompletionRequestPrompt,
-      /* eslint-disable-next-line @typescript-eslint/naming-convention */
-      max_tokens: workspace.getConfiguration("rhpilot").get("maxTokens"),
-      temperature: workspace.getConfiguration("rhpilot").get("temperature"),
+    const chatCompletion = {
+      model, 
+      prompt,
+      max_tokens,
+      temperature,
       stop: stopWords,
-    });
+    }
+      
+    console.debug("Calling OpenAi with  = ", chatCompletion);
+    
+    return this.openai.createCompletion(chatCompletion)
+
   }
 
   private toInlineCompletions(
     value: CreateCompletionResponse,
     position: Position
-  ): InlineCompletionItem[] {
-    return (
-      value.choices
-        ?.map((choice) => choice.text)
-        .map(
-          (choiceText) =>
-            new InlineCompletionItem(
-              choiceText as string,
-              new Range(position, position)
-            )
-        ) || []
-    );
+  ): InlineCompletionItem[] {    
+    const completions = value.choices
+    ?.map((choice) => choice.text)
+    ?.map(
+      (choiceText) =>
+        this.removeMDlang(choiceText).map((block) =>
+        new InlineCompletionItem(
+          block.code,
+          new Range(position, position)
+        )
+    )).flat()
+    console.debug("Completions = ", completions)
+    return (completions || [] )
+  }
+
+  removeMDlang(text="") {    
+    const regex = /```([\w-]+)[\n\s]*([^`]*)/gm;
+    
+    let codeBlocks = [];
+    let match = null 
+
+    while (match = regex.exec(text)) {
+      const language = match[1];
+      const code = match[2].trim();
+      codeBlocks.push({language, code});
+    }
+    return codeBlocks
   }
 }
